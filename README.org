@@ -1,0 +1,4 @@
+#+TITLE: Test script for the runbuddy XMPP pub sub system
+#+AUTHOR: Ryan Jeffrey
+#+EMAIL: jeffrrya@oregonstate.edu
+
