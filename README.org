@@ -2,3 +2,13 @@
 #+AUTHOR: Ryan Jeffrey
 #+EMAIL: jeffrrya@oregonstate.edu
 
+* How
+To use this script you must have ~ruby~, ~gem~, and ~bundler~ installed.
+
+#+begin_src shell
+git clone https://github.com/Runbuddy-Capstone/xmpp_tester
+cd xmpp_tester
+bundle install
+# Assuming no errors occurred during bundle install
+ruby xmpp_tester.rb
+#+end_src
