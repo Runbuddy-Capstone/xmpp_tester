@@ -9,6 +9,8 @@ puts "logging in..."
 PUBSUB_HOST = 'chat.ryanmj.xyz'
 TEST_NODE = 'testNode'
 
+$stop_server = false
+
 # Test module that implements the DSL.
 module XMPPTest
   extend Blather::DSL
@@ -32,7 +34,7 @@ module XMPPTest
       write_to_stream Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, 'This is my TEST PAYLOAD!!!!!')
       puts 'Done writing test publish.'
 
-      while true
+      until $stop_server
         sleep 5
         puts 'Requesting items from the server...'
         write_to_stream Blather::Stanza::PubSub::Items.request(PUBSUB_HOST, TEST_NODE)
@@ -109,8 +111,8 @@ end
 #helper = pubsub
 
 # Catpture sigint and sigterm
-trap(:INT) { EM.stop }
-trap(:TERM) { EM.stop }
+trap(:INT) { EM.stop; $stop_server = true }
+trap(:TERM) { EM.stop; $stop_server = true }
 # Run event machine.
 
 # Run.
