@@ -1,15 +1,24 @@
 #!/usr/bin/env ruby
 
 # Created by Ryan Jeffrey
+# This script is for testing runbuddy's XMPP pubsub system.
 
 require 'blather/client/dsl'
+require 'pp'
 
 puts "logging in..."
 
 PUBSUB_HOST = 'chat.ryanmj.xyz'
 TEST_NODE = 'testNode'
 
+# For graceful shutdown.
 $stop_server = false
+# Time since script start (in MS).
+$time_spent = 0
+
+def create_test_data
+  Nokogiri::XML::DocumentFragment.parse("<data xmlns=\'https://example.org\'>#$time_spent</data>")
+end
 
 # Test module that implements the DSL.
 module XMPPTest
@@ -22,20 +31,26 @@ module XMPPTest
 
     puts "Connected ! as #{jid.stripped}."
     begin
-      # puts 'Setting up a new node...'
-      # write_to_stream Blather::Stanza::PubSub::Create.new(:set, 'ryanmj.xyz', 'testNode')
-      # puts 'Done Setting up a new node.'
+      # TODO patch blather so that it uses a dataform.
+
+      # puts 'Getting subscriptions...'
+      # write_to_stream Blather::Stanza::PubSub::Subscriptions.new(:get, PUBSUB_HOST)
+      # puts 'Done getting subscriptions.'
 
       puts 'Setting up a subscription...'
       write_to_stream Blather::Stanza::PubSub::Subscribe.new(:set, PUBSUB_HOST, TEST_NODE, Blather::JID.new('ryan@ryanmj.xyz'))
       puts 'Done setting up a subscription.'
 
       puts 'Writing a test publish...'
-      write_to_stream Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, 'This is my TEST PAYLOAD!!!!!')
+      pubber = Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, create_test_data)
+      write_to_stream pubber
+      puts "The publish is\n#{pubber.to_xml}"
       puts 'Done writing test publish.'
 
+      # Request items for the pubsub server every five seconds.
       until $stop_server
         sleep 5
+        $time_spent += 5000
         puts 'Requesting items from the server...'
         write_to_stream Blather::Stanza::PubSub::Items.request(PUBSUB_HOST, TEST_NODE)
         puts 'Done requesting items.'
@@ -48,6 +63,8 @@ module XMPPTest
   }
 
   disconnected { puts "Disconnected ! from #{jid.stripped}." }
+  # Remember to print items like puts "#{item.pretty_inspect}" otherwise you get
+  # garbled output from multiple threads.
 
   subscription do |stanza|
     puts 'We got a subscription'
@@ -55,7 +72,7 @@ module XMPPTest
   end
 
   pubsub_subscriptions do |stanza|
-    puts 'We got a pubsub subscriptions!'
+    puts 'We got pubsub subscriptions!'
     pp stanza
   end
 
@@ -64,9 +81,10 @@ module XMPPTest
     pp stanza
   end
 
-  pubsub_subscription do |stanza|
-    puts 'We got a pubsub subscription!'
-    pp stanza
+  pubsub_subscription do |sub|
+    puts "We got a pubsub subscription!
+Subscribed to #{sub.jid.stripped}/#{sub.node}.  The sub type is :#{sub.subscription}.
+The type of this event is :#{sub.type} and the subid is #{sub.subid}."
   end
 
   pubsub_event do |stanza|
@@ -81,6 +99,7 @@ module XMPPTest
 
   pubsub_create do |stanza|
     puts 'We got a pubsub create node event!'
+    write_to_stream stanza.approve!
     pp stanza
   end
 
@@ -94,17 +113,15 @@ module XMPPTest
     pp status
   end
 
+  # Supposed to handle errors but does nothing for pubsub errors :/.
   handle :error do |err|
     puts 'Got an error from the server'
     pp err
   end
 
+  # Uncomment this for errors.
   # iq do |stanza, xpath_result|
-  #   puts 'Got an IQ'
-  #   pp stanza
-  #   puts ''
-  #   pp xpath_result
-  #   puts ''
+  #   puts "Got an IQ: #{stanza.pretty_inspect}"
   # end
 end
 
