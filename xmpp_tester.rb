@@ -63,60 +63,59 @@ module XMPPTest
   }
 
   disconnected { puts "Disconnected ! from #{jid.stripped}." }
-  # Remember to print items like puts "#{item.pretty_inspect}" otherwise you get
-  # garbled output from multiple threads.
+  # Remember to print items like puts "#{item.pretty_inspect}" or #{item.to_xml}
+  # otherwise you get garbled output from multiple threads.
 
   subscription do |stanza|
-    puts 'We got a subscription'
-    write_to_stream stanza.approve!
+    puts "Got a pubsub subscription: #{stanza.to_xml}"
+    true
   end
 
   pubsub_subscriptions do |stanza|
-    puts 'We got pubsub subscriptions!'
-    pp stanza
+    puts "Got pubsub subscriptions object:\n#{stanza.to_xml}"
+    true
   end
 
   pubsub_publish do |stanza|
-    puts 'We got a pubsub publish!'
-    pp stanza
+    puts "Got a pubsub publish event:\n#{stanza.to_xml}"
+    true
   end
 
   pubsub_subscription do |sub|
-    puts "We got a pubsub subscription!
-Subscribed to #{sub.jid.stripped}/#{sub.node}.  The sub type is :#{sub.subscription}.
-The type of this event is :#{sub.type} and the subid is #{sub.subid}."
-  end
-
-  pubsub_event do |stanza|
-    puts 'We got a pubsub event!'
-    pp stanza
+    puts "Got a pubsub subscription:\n#{sub.to_xml}"
+    true
   end
 
   pubsub_items do |stanza|
-    puts 'We got a pubsub item!'
-    pp stanza
+    puts "Got a pubsub item:\n#{stanza.to_xml}"
+    true
   end
 
   pubsub_create do |stanza|
-    puts 'We got a pubsub create node event!'
+    puts "Got a pubsub create event:\n#{stanza.to_xml}"
     write_to_stream stanza.approve!
-    pp stanza
+    true
+  end
+
+  pubsub_event do |stanza|
+    puts "Got a general pubsub event:\n#{stanza.to_xml}"
+    true
   end
 
   message do |m|
-    puts 'Got a message:'
-    pp m
+    puts "Got a message of some sort:\n#{m.to_xml}:"
+    true
   end
 
   status do |status|
-    puts 'Got a status:'
-    pp status
+    puts "Got a status:\n#{status.to_xml}"
+    true
   end
 
   # Supposed to handle errors but does nothing for pubsub errors :/.
   handle :error do |err|
-    puts 'Got an error from the server'
-    pp err
+    puts "Got an error from the server\n#{err.pretty_inspect}"
+    true
   end
 
   # Uncomment this for errors.
