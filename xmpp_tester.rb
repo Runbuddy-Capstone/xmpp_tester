@@ -17,7 +17,7 @@ $stop_server = false
 $time_spent = 0
 
 def create_test_data
-  Nokogiri::XML::DocumentFragment.parse("<data xmlns=\'https://example.org\'>#$time_spent</data>")
+  Nokogiri::XML::DocumentFragment.parse("<data xmlns=\'https://example.org\'>From Ruby: #$time_spent</data>")
 end
 
 # Test module that implements the DSL.
@@ -42,18 +42,21 @@ module XMPPTest
       puts 'Done setting up a subscription.'
 
       puts 'Writing a test publish...'
-      pubber = Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, create_test_data)
-      write_to_stream pubber
-      puts "The publish is\n#{pubber.to_xml}"
+      write_to_stream Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, create_test_data)
       puts 'Done writing test publish.'
 
       # Request items for the pubsub server every five seconds.
       until $stop_server
         sleep 5
-        $time_spent += 5000
+        $time_spent += 5
         puts 'Requesting items from the server...'
         write_to_stream Blather::Stanza::PubSub::Items.request(PUBSUB_HOST, TEST_NODE)
         puts 'Done requesting items.'
+        if $time_spent % 60 == 0
+          puts 'Writing a test publish...'
+          write_to_stream Blather::Stanza::PubSub::Publish.new(PUBSUB_HOST, TEST_NODE, :set, create_test_data)
+          puts 'Done writing test publish.'
+        end
       end
     rescue => e
       STDERR.puts "Error in setting up pubsub for #{jid.stripped}"
